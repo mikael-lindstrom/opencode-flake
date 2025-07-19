@@ -15,9 +15,9 @@
           version = "0.3.5";
 
           architectures = {
-            "x86_64-linux" = "linux-amd64";
+            "x86_64-linux" = "linux-x64";
             "aarch64-linux" = "linux-arm64";
-            "x86_64-darwin" = "darwin-amd64";
+            "x86_64-darwin" = "darwin-x64";
             "aarch64-darwin" = "darwin-arm64";
           };
           arch = architectures.${system} or (throw "unsupported system: ${system}");
