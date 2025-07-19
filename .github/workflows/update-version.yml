@@ -1,0 +1,66 @@
+name: Update OpenCode Version
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # Daily at 2 AM UTC
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Check current version
+        id: current-version
+        run: |
+          CURRENT_VERSION=$(grep 'version = "' flake.nix | cut -d'"' -f2)
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Check latest version
+        id: latest-version
+        run: |
+          LATEST_VERSION=$(curl -s https://registry.npmjs.org/opencode-ai/latest | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+          echo "latest=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          echo "Latest version: $LATEST_VERSION"
+
+      - name: Skip if versions match
+        if: steps.current-version.outputs.current == steps.latest-version.outputs.latest
+        run: |
+          echo "Version ${{ steps.current-version.outputs.current }} is already up to date"
+          exit 0
+
+      - name: Update version
+        if: steps.current-version.outputs.current != steps.latest-version.outputs.latest
+        run: |
+          echo "Updating from ${{ steps.current-version.outputs.current }} to ${{ steps.latest-version.outputs.latest }}"
+          chmod +x bin/update-version.sh
+          ./bin/update-version.sh
+
+      - name: Test build
+        if: steps.current-version.outputs.current != steps.latest-version.outputs.latest
+        run: |
+          echo "Testing build with new version..."
+          nix build --no-link
+
+      - name: Commit and push changes
+        if: steps.current-version.outputs.current != steps.latest-version.outputs.latest
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add flake.nix
+          git commit -m "Update opencode to version ${{ steps.latest-version.outputs.latest }}
+
+          🤖 Generated with GitHub Actions"
+          git push

@@ -48,14 +48,23 @@ fi
 
 echo -e "\nUpdating $FLAKE_FILE..."
 
-# Update version
-sed -i '' "s/version = \"[^\"]*\";/version = \"$VERSION\";/" "$FLAKE_FILE"
-
-# Update checksums
-sed -i '' "s/\"opencode-ai\" = \"[^\"]*\";/\"opencode-ai\" = \"$OPENCODE_AI_HASH\";/" "$FLAKE_FILE"
-sed -i '' "s/\"opencode-darwin-arm64\" = \"[^\"]*\";/\"opencode-darwin-arm64\" = \"$DARWIN_ARM64_HASH\";/" "$FLAKE_FILE"
-sed -i '' "s/\"opencode-darwin-x64\" = \"[^\"]*\";/\"opencode-darwin-x64\" = \"$DARWIN_X64_HASH\";/" "$FLAKE_FILE"
-sed -i '' "s/\"opencode-linux-arm64\" = \"[^\"]*\";/\"opencode-linux-arm64\" = \"$LINUX_ARM64_HASH\";/" "$FLAKE_FILE"
-sed -i '' "s/\"opencode-linux-x64\" = \"[^\"]*\";/\"opencode-linux-x64\" = \"$LINUX_X64_HASH\";/" "$FLAKE_FILE"
+# Update version (compatible with both macOS and Linux)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+	sed -i '' "s/version = \"[^\"]*\";/version = \"$VERSION\";/" "$FLAKE_FILE"
+	# Update checksums
+	sed -i '' "s/\"opencode-ai\" = \"[^\"]*\";/\"opencode-ai\" = \"$OPENCODE_AI_HASH\";/" "$FLAKE_FILE"
+	sed -i '' "s/\"opencode-darwin-arm64\" = \"[^\"]*\";/\"opencode-darwin-arm64\" = \"$DARWIN_ARM64_HASH\";/" "$FLAKE_FILE"
+	sed -i '' "s/\"opencode-darwin-x64\" = \"[^\"]*\";/\"opencode-darwin-x64\" = \"$DARWIN_X64_HASH\";/" "$FLAKE_FILE"
+	sed -i '' "s/\"opencode-linux-arm64\" = \"[^\"]*\";/\"opencode-linux-arm64\" = \"$LINUX_ARM64_HASH\";/" "$FLAKE_FILE"
+	sed -i '' "s/\"opencode-linux-x64\" = \"[^\"]*\";/\"opencode-linux-x64\" = \"$LINUX_X64_HASH\";/" "$FLAKE_FILE"
+else
+	sed -i "s/version = \"[^\"]*\";/version = \"$VERSION\";/" "$FLAKE_FILE"
+	# Update checksums
+	sed -i "s/\"opencode-ai\" = \"[^\"]*\";/\"opencode-ai\" = \"$OPENCODE_AI_HASH\";/" "$FLAKE_FILE"
+	sed -i "s/\"opencode-darwin-arm64\" = \"[^\"]*\";/\"opencode-darwin-arm64\" = \"$DARWIN_ARM64_HASH\";/" "$FLAKE_FILE"
+	sed -i "s/\"opencode-darwin-x64\" = \"[^\"]*\";/\"opencode-darwin-x64\" = \"$DARWIN_X64_HASH\";/" "$FLAKE_FILE"
+	sed -i "s/\"opencode-linux-arm64\" = \"[^\"]*\";/\"opencode-linux-arm64\" = \"$LINUX_ARM64_HASH\";/" "$FLAKE_FILE"
+	sed -i "s/\"opencode-linux-x64\" = \"[^\"]*\";/\"opencode-linux-x64\" = \"$LINUX_X64_HASH\";/" "$FLAKE_FILE"
+fi
 
 echo "Successfully updated $FLAKE_FILE with new hashes for version $VERSION"
