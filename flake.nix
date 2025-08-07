@@ -12,7 +12,7 @@
 
       perSystem = { pkgs, system, ... }:
         let
-          version = "0.3.131";
+          version = "0.3.133";
 
           architectures = {
             "x86_64-linux" = "linux-x64";
@@ -23,11 +23,11 @@
           arch = architectures.${system} or (throw "unsupported system: ${system}");
 
           checksums = {
-            "opencode-ai" = "1swk5xlax44sy03ih0j6jdp5ysfqs3kb510bdcnq9pwvdgzrlikf";
-            "opencode-darwin-arm64" = "14zvm3vsniirycc1y86iph8w7vv7sm56mwgzcqbijn37k7fn9nbc";
-            "opencode-darwin-x64" = "0nhlplz0wfbvmgkpwr7jdz8cy6a7hvhn5g0q3yw4byy3iwp5vicb";
-            "opencode-linux-arm64" = "0z40viclgzwip6rwn4944z3jdgjkijjzp1xhla9kpiww5wzghgni";
-            "opencode-linux-x64" = "1gxk1dsnx3nfch7x49mnszib40xzqhwr2dkzmyv194j2dqh7f3c8";
+            "opencode-ai" = "1a2z0nwn2wddlf6i4iwmwalr3igpyvy25sa8hgwhg2a24iaiby70";
+            "opencode-darwin-arm64" = "065swh13zqhwfh1krk83nlz29qqnck9a10bzwsqhx3s9cpbya7km";
+            "opencode-darwin-x64" = "0lcx3ls5jk7dp0i90xl7jb5fkvrk0f4whkk3vgjhiflmngrylxcx";
+            "opencode-linux-arm64" = "1hmyzf2z2n82v28ymqn87mjkl8jrqma06kw4nxc7f2v9xz0n9sdh";
+            "opencode-linux-x64" = "0dg80n3zqndp4h35s8qpv75caf7z8jwgfzqkyjzmwv8gqgik5bp8";
           };
           opencodeSha = checksums."opencode-ai";
           platformSha = checksums."opencode-${arch}" or (throw "no sha for: opencode-${arch}");
