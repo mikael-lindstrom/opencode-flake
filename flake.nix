@@ -12,7 +12,8 @@
 
       perSystem = { pkgs, system, ... }:
         let
-          version = "1.18.31";
+          opencodeVersion = "1.18.31";
+          opencode2Version = "2.0.10";
 
           architectures = {
             "x86_64-linux" = "linux-x64";
@@ -22,58 +23,111 @@
           };
           arch = architectures.${system} or (throw "unsupported system: ${system}");
 
+          platformVersions = {
+            "opencode-darwin-arm64-version" = "1.18.31";
+            "opencode-darwin-x64-version" = "1.18.31";
+            "opencode-linux-arm64-version" = "1.18.31";
+            "opencode-linux-x64-version" = "1.18.31";
+            "opencode2-darwin-arm64-version" = "2.0.10";
+            "opencode2-darwin-x64-version" = "2.0.10";
+            "opencode2-linux-arm64-version" = "2.0.10";
+            "opencode2-linux-x64-version" = "2.0.10";
+          };
+
           checksums = {
-            "opencode-ai" = "0n8vvkk8h6maqh44nawbjkka5ark393ajjs7h5lhjbnd0cqabfmn";
+            "opencode-root" = "0n8vvkk8h6maqh44nawbjkka5ark393ajjs7h5lhjbnd0cqabfmn";
             "opencode-darwin-arm64" = "0wfnaymjyfd4j8qi975b0zmc8xvr8pyxs1aznqck82szfq39myp1";
             "opencode-darwin-x64" = "1sll8hs3i2xc6zrqcxy2x02b5iksl0czw836zyk4f7vz42hlmkyz";
             "opencode-linux-arm64" = "1l35fjdzsz5a5ccr1if822rvrxlk74kbakbiwmy2ny62hacgqc4z";
             "opencode-linux-x64" = "1shd2il7nczfn0i85dq1a44zcp266kf9d0vj7s90s0wb58jxm2bd";
+            "opencode2-root" = "0z0s3rfbjlvznhwi7dy7acc6ljhnjxfnhw3s61i8wp5acmy0n65b";
+            "opencode2-darwin-arm64" = "13p10y2yy84dbipw0w0mab6cqrnahzwv7978z8gf7zpxf8cr6lzj";
+            "opencode2-darwin-x64" = "1x6gi2q4m8b931z1byzpvm4mhazkzchv3f50lc4k65zyn18avc5r";
+            "opencode2-linux-arm64" = "1g0f13m94b6j58qclb5xxw01mjwny9x26045m72msia0c9kicm6g";
+            "opencode2-linux-x64" = "0bzlv0xs1573wh00fyxrb3dv5d6zqxh7sgwzxxh5j04iikbq8g6a";
           };
-          opencodeSha = checksums."opencode-ai";
-          platformSha = checksums."opencode-${arch}" or (throw "no sha for: opencode-${arch}");
 
-          platformPackage = "opencode-${arch}";
+          mkOpencode =
+            { pname
+            , version
+            , rootPackage
+            , rootTarball
+            , platformPackagePrefix
+            , platformTarballPrefix
+            , sourceBinaryName
+            , binaryName
+            }:
+            let
+              platformPackage = "${platformPackagePrefix}${arch}";
+              platformTarball = "${platformTarballPrefix}${arch}";
+              platformVersion = platformVersions."${pname}-${arch}-version"
+                or (throw "no version for: ${pname}-${arch}");
+            in
+            pkgs.stdenv.mkDerivation {
+              inherit pname version;
 
-          opencode = pkgs.stdenv.mkDerivation {
+              src = pkgs.fetchurl {
+                url = "https://registry.npmjs.org/${rootPackage}/-/${rootTarball}-${version}.tgz";
+                sha256 = checksums."${pname}-root";
+              };
+
+              platformSrc = pkgs.fetchurl {
+                url = "https://registry.npmjs.org/${platformPackage}/-/${platformTarball}-${platformVersion}.tgz";
+                sha256 = checksums."${pname}-${arch}" or (throw "no sha for: ${pname}-${arch}");
+              };
+
+              nativeBuildInputs = [ pkgs.makeWrapper ];
+
+              installPhase = ''
+                mkdir -p $out/bin $out/lib/{root,platform}
+                tar -xzf $src --strip-components=1 -C $out/lib/root
+                tar -xzf $platformSrc --strip-components=1 -C $out/lib/platform
+                ln -s $out/lib/platform/bin/${sourceBinaryName} $out/bin/${binaryName}
+                chmod +x $out/bin/${binaryName}
+                wrapProgram $out/bin/${binaryName} \
+                  --set OPENCODE_BIN_PATH $out/lib/platform/bin/${sourceBinaryName}
+              '';
+
+              meta = {
+                description = "AI coding agent, built for the terminal";
+                homepage = "https://github.com/anomalyco/opencode";
+                license = pkgs.lib.licenses.mit;
+                mainProgram = binaryName;
+                platforms = builtins.attrNames architectures;
+              };
+            };
+
+          opencode = mkOpencode {
             pname = "opencode";
-            inherit version;
+            version = opencodeVersion;
+            rootPackage = "opencode-ai";
+            rootTarball = "opencode-ai";
+            platformPackagePrefix = "opencode-";
+            platformTarballPrefix = "opencode-";
+            sourceBinaryName = "opencode";
+            binaryName = "opencode";
+          };
 
-            src = pkgs.fetchurl {
-              url = "https://registry.npmjs.org/opencode-ai/-/opencode-ai-${version}.tgz";
-              sha256 = opencodeSha;
-            };
-
-            platformSrc = pkgs.fetchurl {
-              url = "https://registry.npmjs.org/${platformPackage}/-/${platformPackage}-${version}.tgz";
-              sha256 = platformSha;
-            };
-
-            nativeBuildInputs = [ pkgs.makeWrapper ];
-
-            installPhase = ''
-              mkdir -p $out/{bin,lib/{opencode-ai,${platformPackage}}}
-              tar -xzf $src --strip-components=1 -C $out/lib/opencode-ai
-              tar -xzf $platformSrc --strip-components=1 -C $out/lib/${platformPackage}
-              ln -s $out/lib/${platformPackage}/bin/opencode $out/bin/opencode
-              chmod +x $out/bin/opencode
-              wrapProgram $out/bin/opencode --set OPENCODE_BIN_PATH $out/lib/${platformPackage}/bin/opencode
-            '';
-
-            meta = {
-              description = "AI coding agent, built for the terminal.";
-              homepage = "https://github.com/sst/opencode";
-              license = pkgs.lib.licenses.mit;
-              platforms = [ system ];
-            };
+          opencode2 = mkOpencode {
+            pname = "opencode2";
+            version = opencode2Version;
+            rootPackage = "@opencode/cli";
+            rootTarball = "cli";
+            platformPackagePrefix = "@opencode/cli-";
+            platformTarballPrefix = "cli-";
+            sourceBinaryName = "opencode";
+            binaryName = "opencode2";
           };
         in
         {
-          packages.default = opencode;
+          packages = {
+            default = opencode;
+            inherit opencode opencode2;
+          };
 
           devShells.default = pkgs.mkShell {
-            buildInputs = [ opencode ];
+            packages = [ opencode pkgs.curl pkgs.jq ];
           };
         };
     };
 }
-

@@ -1,70 +1,100 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -euo pipefail
 
 FLAKE_FILE="flake.nix"
+ARCHITECTURES=(darwin-arm64 darwin-x64 linux-arm64 linux-x64)
 
 if [[ ! -f "$FLAKE_FILE" ]]; then
-	echo "Error: $FLAKE_FILE not found in current directory"
+	printf 'Error: %s not found in current directory\n' "$FLAKE_FILE" >&2
 	exit 1
 fi
 
-echo "Fetching latest version from npm registry..."
-VERSION=$(curl -s https://registry.npmjs.org/opencode-ai/latest | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+replace_value() {
+	local pattern=$1
+	local replacement=$2
+	local expression
+	printf -v expression 's|(%s = ")[^"]*(";)|\\1%s\\2|' "$pattern" "$replacement"
 
-if [[ -z "$VERSION" ]]; then
-	echo "Error: Failed to fetch version from npm registry"
-	exit 1
-fi
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		sed -i '' -E "$expression" "$FLAKE_FILE"
+	else
+		sed -i -E "$expression" "$FLAKE_FILE"
+	fi
+}
 
-echo -e "Latest version: $VERSION\n"
-echo -e "Fetching hashes for version $VERSION..."
+replace_attr() {
+	local key=$1
+	local replacement=$2
+	local pattern
+	printf -v pattern '"%s"' "$key"
 
-# Fetch hash for opencode-ai package
-echo -n "Fetching opencode-ai hash... "
-OPENCODE_AI_HASH=$(nix-prefetch-url --type sha256 https://registry.npmjs.org/opencode-ai/-/opencode-ai-${VERSION}.tgz 2>/dev/null)
-echo "$OPENCODE_AI_HASH"
+	replace_value "$pattern" "$replacement"
+}
 
-# Fetch hashes for platform-specific packages
-echo -n "Fetching opencode-darwin-arm64 hash... "
-DARWIN_ARM64_HASH=$(nix-prefetch-url --type sha256 https://registry.npmjs.org/opencode-darwin-arm64/-/opencode-darwin-arm64-${VERSION}.tgz 2>/dev/null)
-echo "$DARWIN_ARM64_HASH"
+update_channel() {
+	local pname=$1
+	local versionKey=$2
+	local metadataPackage=$3
+	local tag=$4
+	local rootPackage=$5
+	local rootTarball=$6
+	local platformPackagePrefix=$7
+	local platformTarballPrefix=$8
+	local metadataUrl="https://registry.npmjs.org/${metadataPackage}/${tag}"
+	local metadata
+	local version
+	local platformVersion
+	local hash
+	local arch
+	local package
+	local tarball
 
-echo -n "Fetching opencode-darwin-x64 hash... "
-DARWIN_X64_HASH=$(nix-prefetch-url --type sha256 https://registry.npmjs.org/opencode-darwin-x64/-/opencode-darwin-x64-${VERSION}.tgz 2>/dev/null)
-echo "$DARWIN_X64_HASH"
+	printf 'Fetching %s@%s metadata...\n' "$rootPackage" "$tag"
+	metadata=$(curl --fail --silent --show-error "$metadataUrl")
+	version=$(jq -er '.version' <<<"$metadata")
+	printf 'Latest %s version: %s\n' "$pname" "$version"
 
-echo -n "Fetching opencode-linux-arm64 hash... "
-LINUX_ARM64_HASH=$(nix-prefetch-url --type sha256 https://registry.npmjs.org/opencode-linux-arm64/-/opencode-linux-arm64-${VERSION}.tgz 2>/dev/null)
-echo "$LINUX_ARM64_HASH"
+	printf 'Fetching %s hash... ' "$rootPackage"
+	hash=$(nix-prefetch-url --type sha256 \
+		"https://registry.npmjs.org/${rootPackage}/-/${rootTarball}-${version}.tgz" 2>/dev/null)
+	printf '%s\n' "$hash"
+	replace_attr "${pname}-root" "$hash"
 
-echo -n "Fetching opencode-linux-x64 hash... "
-LINUX_X64_HASH=$(nix-prefetch-url --type sha256 https://registry.npmjs.org/opencode-linux-x64/-/opencode-linux-x64-${VERSION}.tgz 2>/dev/null)
-echo "$LINUX_X64_HASH"
+	for arch in "${ARCHITECTURES[@]}"; do
+		package="${platformPackagePrefix}${arch}"
+		tarball="${platformTarballPrefix}${arch}"
+		platformVersion=$(jq -er --arg package "$package" \
+			'.optionalDependencies[$package]' <<<"$metadata")
+		printf 'Fetching %s@%s hash... ' "$package" "$platformVersion"
+		hash=$(nix-prefetch-url --type sha256 \
+			"https://registry.npmjs.org/${package}/-/${tarball}-${platformVersion}.tgz" 2>/dev/null)
+		printf '%s\n' "$hash"
+		replace_attr "${pname}-${arch}-version" "$platformVersion"
+		replace_attr "${pname}-${arch}" "$hash"
+	done
 
-# Verify all hashes were fetched successfully
-if [[ -z "$OPENCODE_AI_HASH" || -z "$DARWIN_ARM64_HASH" || -z "$DARWIN_X64_HASH" || -z "$LINUX_ARM64_HASH" || -z "$LINUX_X64_HASH" ]]; then
-	echo "Error: Failed to fetch one or more hashes"
-	exit 1
-fi
+	replace_value "$versionKey" "$version"
+}
 
-echo -e "\nUpdating $FLAKE_FILE..."
+update_channel \
+	"opencode" \
+	"opencodeVersion" \
+	"opencode-ai" \
+	"latest" \
+	"opencode-ai" \
+	"opencode-ai" \
+	"opencode-" \
+	"opencode-"
 
-# Update version (compatible with both macOS and Linux)
-if [[ "$OSTYPE" == "darwin"* ]]; then
-	sed -i '' "s/version = \"[^\"]*\";/version = \"$VERSION\";/" "$FLAKE_FILE"
-	# Update checksums
-	sed -i '' "s/\"opencode-ai\" = \"[^\"]*\";/\"opencode-ai\" = \"$OPENCODE_AI_HASH\";/" "$FLAKE_FILE"
-	sed -i '' "s/\"opencode-darwin-arm64\" = \"[^\"]*\";/\"opencode-darwin-arm64\" = \"$DARWIN_ARM64_HASH\";/" "$FLAKE_FILE"
-	sed -i '' "s/\"opencode-darwin-x64\" = \"[^\"]*\";/\"opencode-darwin-x64\" = \"$DARWIN_X64_HASH\";/" "$FLAKE_FILE"
-	sed -i '' "s/\"opencode-linux-arm64\" = \"[^\"]*\";/\"opencode-linux-arm64\" = \"$LINUX_ARM64_HASH\";/" "$FLAKE_FILE"
-	sed -i '' "s/\"opencode-linux-x64\" = \"[^\"]*\";/\"opencode-linux-x64\" = \"$LINUX_X64_HASH\";/" "$FLAKE_FILE"
-else
-	sed -i "s/version = \"[^\"]*\";/version = \"$VERSION\";/" "$FLAKE_FILE"
-	# Update checksums
-	sed -i "s/\"opencode-ai\" = \"[^\"]*\";/\"opencode-ai\" = \"$OPENCODE_AI_HASH\";/" "$FLAKE_FILE"
-	sed -i "s/\"opencode-darwin-arm64\" = \"[^\"]*\";/\"opencode-darwin-arm64\" = \"$DARWIN_ARM64_HASH\";/" "$FLAKE_FILE"
-	sed -i "s/\"opencode-darwin-x64\" = \"[^\"]*\";/\"opencode-darwin-x64\" = \"$DARWIN_X64_HASH\";/" "$FLAKE_FILE"
-	sed -i "s/\"opencode-linux-arm64\" = \"[^\"]*\";/\"opencode-linux-arm64\" = \"$LINUX_ARM64_HASH\";/" "$FLAKE_FILE"
-	sed -i "s/\"opencode-linux-x64\" = \"[^\"]*\";/\"opencode-linux-x64\" = \"$LINUX_X64_HASH\";/" "$FLAKE_FILE"
-fi
+update_channel \
+	"opencode2" \
+	"opencode2Version" \
+	"@opencode%2fcli" \
+	"latest" \
+	"@opencode/cli" \
+	"cli" \
+	"@opencode/cli-" \
+	"cli-"
 
-echo "Successfully updated $FLAKE_FILE with new hashes for version $VERSION"
+printf 'Successfully updated %s\n' "$FLAKE_FILE"
