@@ -79,13 +79,13 @@
               nativeBuildInputs = [ pkgs.makeWrapper ];
 
               installPhase = ''
-                mkdir -p $out/bin $out/lib/{root,platform}
-                tar -xzf $src --strip-components=1 -C $out/lib/root
-                tar -xzf $platformSrc --strip-components=1 -C $out/lib/platform
-                ln -s $out/lib/platform/bin/${sourceBinaryName} $out/bin/${binaryName}
+                mkdir -p $out/bin $out/lib/${pname}/{root,platform}
+                tar -xzf $src --strip-components=1 -C $out/lib/${pname}/root
+                tar -xzf $platformSrc --strip-components=1 -C $out/lib/${pname}/platform
+                ln -s $out/lib/${pname}/platform/bin/${sourceBinaryName} $out/bin/${binaryName}
                 chmod +x $out/bin/${binaryName}
                 wrapProgram $out/bin/${binaryName} \
-                  --set OPENCODE_BIN_PATH $out/lib/platform/bin/${sourceBinaryName}
+                  --set OPENCODE_BIN_PATH $out/lib/${pname}/platform/bin/${sourceBinaryName}
               '';
 
               meta = {
@@ -123,6 +123,11 @@
           packages = {
             default = opencode;
             inherit opencode opencode2;
+          };
+
+          checks.coexistence = pkgs.buildEnv {
+            name = "opencode-coexistence";
+            paths = [ opencode opencode2 ];
           };
 
           devShells.default = pkgs.mkShell {
