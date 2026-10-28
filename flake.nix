@@ -12,7 +12,7 @@
 
       perSystem = { pkgs, system, ... }:
         let
-          opencodeVersion = "1.19.4";
+          opencodeVersion = "1.19.5";
           opencode2Version = "2.2.0";
 
           architectures = {
@@ -24,10 +24,10 @@
           arch = architectures.${system} or (throw "unsupported system: ${system}");
 
           platformVersions = {
-            "opencode-darwin-arm64-version" = "1.19.4";
-            "opencode-darwin-x64-version" = "1.19.4";
-            "opencode-linux-arm64-version" = "1.19.4";
-            "opencode-linux-x64-version" = "1.19.4";
+            "opencode-darwin-arm64-version" = "1.19.5";
+            "opencode-darwin-x64-version" = "1.19.5";
+            "opencode-linux-arm64-version" = "1.19.5";
+            "opencode-linux-x64-version" = "1.19.5";
             "opencode2-darwin-arm64-version" = "2.2.0";
             "opencode2-darwin-x64-version" = "2.2.0";
             "opencode2-linux-arm64-version" = "2.2.0";
@@ -35,11 +35,11 @@
           };
 
           checksums = {
-            "opencode-root" = "0dwid95plx67wxbdcya2sx3mcr23xm8xdmplsgfm1g8bgrfa9v1c";
-            "opencode-darwin-arm64" = "0ax15xnb4fmflrw6h9shzy8ba811p0lb2h8s2k99w7a65gyfir3r";
-            "opencode-darwin-x64" = "043jzv4y2ikaw4jvz2pqxj51v12wyfxp4vn3zxaksm5804n412pa";
-            "opencode-linux-arm64" = "14d9y1fx44231rbh57i8yg4hpvly3xp2s7fz5hn5vbxk7r73g701";
-            "opencode-linux-x64" = "03cdcnpbflyg6rry9s4rjdnkayq5539rqy8vd2riljjfpdmv19yw";
+            "opencode-root" = "103ng2f8ywwfr670lhcl5qpdd5mak2zgivw2jii2m97qh69y95qz";
+            "opencode-darwin-arm64" = "1x4anyy1wkrlg4j7piw3d91hlhvyxwwwxk95yghcyx8578qx9r20";
+            "opencode-darwin-x64" = "035a6qjmil9li418z1v0ll6cf1a5n094pwdix6gxh3hc6wrmgvp6";
+            "opencode-linux-arm64" = "16jjini4hqf6ji4rcdxawwfnxnkyzsm5075c1fh6grcgbk7g855s";
+            "opencode-linux-x64" = "1q6m3p0153zwb9a86xg5xasy4g5hb3i1pzr2vfycpipc7lqgqz1d";
             "opencode2-root" = "1mfy816pn8yq6ihmyvhcmmmm0lwa2gaix6yhhwdxcq6zs1k28d5a";
             "opencode2-darwin-arm64" = "122nib8fybwmj67cfmqg80x3wmd5i9ig0plgmwhzlx7c4lsh6gn1";
             "opencode2-darwin-x64" = "08w879krq1gizn6mff4mnw32ixf0n2kibvgm8davhsdmsldpczp9";
