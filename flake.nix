@@ -13,7 +13,7 @@
       perSystem = { pkgs, system, ... }:
         let
           opencodeVersion = "1.19.6";
-          opencode2Version = "2.3.0";
+          opencode2Version = "2.3.2";
 
           architectures = {
             "x86_64-linux" = "linux-x64";
@@ -28,10 +28,10 @@
             "opencode-darwin-x64-version" = "1.19.6";
             "opencode-linux-arm64-version" = "1.19.6";
             "opencode-linux-x64-version" = "1.19.6";
-            "opencode2-darwin-arm64-version" = "2.3.0";
-            "opencode2-darwin-x64-version" = "2.3.0";
-            "opencode2-linux-arm64-version" = "2.3.0";
-            "opencode2-linux-x64-version" = "2.3.0";
+            "opencode2-darwin-arm64-version" = "2.3.2";
+            "opencode2-darwin-x64-version" = "2.3.2";
+            "opencode2-linux-arm64-version" = "2.3.2";
+            "opencode2-linux-x64-version" = "2.3.2";
           };
 
           checksums = {
@@ -40,11 +40,11 @@
             "opencode-darwin-x64" = "0gnzcj8n73fs4wjfxrmiy5nacsj7vwk9c7mi634cpsl9xrzs6y72";
             "opencode-linux-arm64" = "1qrjh8cyw9556xip726haiph40i9fnvlcbkfjqmxgpd28yzir4x5";
             "opencode-linux-x64" = "1zr12dvxm25l236k39bizqmj0sy56riv5f9m1qwn2gn64yl7p3rp";
-            "opencode2-root" = "1h142d1v4zs9dcc58ncdx0p0ylxw3nrvzr6fdwyqc1a2wsi69akq";
-            "opencode2-darwin-arm64" = "07k4f30xdy5sdxshha84zff1rdhp2igvjzm6xj7wpl5r5fklfln2";
-            "opencode2-darwin-x64" = "0pkrgrak71r5dx0xmq13mvdayw55b4dssiab4d5wzwkysz04jmx7";
-            "opencode2-linux-arm64" = "1skw53h3g1q8df01c6n36sb0d7h9yhphfccvj51jqndvadihcc5y";
-            "opencode2-linux-x64" = "1bhldiby0nwwq2m8fcbwik6gaw4b78yphknznjimfy5cbx5qb3s0";
+            "opencode2-root" = "07g8rxg06l30i45xcrd5piz795c7ppki9vcpsj64959r81smrbl5";
+            "opencode2-darwin-arm64" = "1a9mflnksixzb650c2pvxcyrbsfjhxmpb9nk53sq0h3gk8br37w2";
+            "opencode2-darwin-x64" = "0ybld99iha5kmsxph2wpcq80zrb3yx7psx30zcz2pc16c32yc92p";
+            "opencode2-linux-arm64" = "01lkwshrspvs3x6rmzbgy8bm3wzr6gjql0f5q2w8xbpxkq93gaci";
+            "opencode2-linux-x64" = "1fznnv0dhs2h4jkrmvcw4zsh9ik4brkrc2ssjisbb8m5bbinhm44";
           };
 
           mkOpencode =
